@@ -131,7 +131,10 @@ impl Mixer {
                         let mut buf: Vec<u8> = Vec::with_capacity(1);
                         stream.read_to_end(&mut buf).expect("Error reading stream");
 
-                        mixer_tx.send(MixerInstruction::from_u8(buf[0])).unwrap();
+                        match MixerInstruction::from_u8(buf[0]) {
+                            Some(ix) => mixer_tx.send(ix).unwrap(),
+                            None => println!("Invalid instruction: {}", buf[0]),
+                        }
                     }
                     Err(_) => println!("Stream error"),
                 }

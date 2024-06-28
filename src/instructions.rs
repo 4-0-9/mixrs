@@ -10,16 +10,16 @@ pub enum MixerInstruction {
 }
 
 impl MixerInstruction {
-    pub fn from_u8(byte: u8) -> Self {
+    pub fn from_u8(byte: u8) -> Option<Self> {
         match byte {
-            0 => MixerInstruction::SelectNext,
-            1 => MixerInstruction::SelectPrevious,
-            2 => MixerInstruction::ToggleMuteCurrent,
-            3 => MixerInstruction::IncreaseCurrent,
-            4 => MixerInstruction::DecreaseCurrent,
-            5 => MixerInstruction::GetCurrent,
-            6 => MixerInstruction::PlayPauseCurrent,
-            _ => panic!("Could not parse '{byte}' to MixerInstruction"),
+            0 => Some(MixerInstruction::SelectNext),
+            1 => Some(MixerInstruction::SelectPrevious),
+            2 => Some(MixerInstruction::ToggleMuteCurrent),
+            3 => Some(MixerInstruction::IncreaseCurrent),
+            4 => Some(MixerInstruction::DecreaseCurrent),
+            5 => Some(MixerInstruction::GetCurrent),
+            6 => Some(MixerInstruction::PlayPauseCurrent),
+            _ => None,
         }
     }
 }
