@@ -28,10 +28,9 @@ use pulse::{
 
 use crate::{
     instructions::MixerInstruction,
-    playerctl_toggle,
+    playerctl::{playerctl_next, playerctl_play_pause, playerctl_previous},
     pulseaudio::{PulseInstruction, SinkInputMixerData},
-    send_notification,
-    utils::{get_sink_input_name, percentage_to_total_volume},
+    utils::{get_sink_input_name, percentage_to_total_volume, send_notification, total_volume_to_percentage, volume_to_percentage},
 };
 
 pub struct Mixer {
@@ -187,6 +186,8 @@ impl Mixer {
                     MixerInstruction::DecreaseCurrent => self.decrease_volume_current(),
                     MixerInstruction::GetCurrent => self.get_current(),
                     MixerInstruction::PlayPauseCurrent => self.play_pause_current(),
+                    MixerInstruction::PlayNext => self.play_next_current(),
+                    MixerInstruction::PlayPrevious => self.play_previous_current(),
                 },
                 Err(_) => (),
             }
@@ -357,14 +358,16 @@ impl Mixer {
 
         drop(index_lock);
 
-        let sink_index = *self.sink_inputs.keys().nth(index).unwrap();
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
 
         self.context
             .borrow_mut()
             .introspect()
             .borrow_mut()
             .set_sink_input_mute(
-                sink_index,
+                *sink_index,
                 !self.sink_inputs.get(&sink_index).unwrap().muted,
                 None,
             );
@@ -379,9 +382,12 @@ impl Mixer {
 
         drop(index_lock);
 
-        let sink_index = *self.sink_inputs.keys().nth(index).unwrap();
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
 
         let sink_input = self.sink_inputs.get(&sink_index).unwrap();
+        let sink_name = sink_input.name.clone();
 
         let mut volume = ChannelVolumes::default();
         volume.set(
@@ -395,7 +401,11 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(sink_index, &volume, None);
+            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
+                if success {
+                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
+                }
+            })));
     }
 
     pub fn decrease_volume_current(&mut self) {
@@ -407,9 +417,12 @@ impl Mixer {
 
         drop(index_lock);
 
-        let sink_index = *self.sink_inputs.keys().nth(index).unwrap();
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
 
         let sink_input = self.sink_inputs.get(&sink_index).unwrap();
+        let sink_name = sink_input.name.clone();
 
         let mut volume = ChannelVolumes::default();
         volume.set(
@@ -423,7 +436,11 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(sink_index, &volume, None);
+            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
+                if success {
+                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
+                }
+            })));
     }
 
     pub fn get_current(&self) {
@@ -435,10 +452,12 @@ impl Mixer {
 
         drop(index_lock);
 
-        let sink_index = *self.sink_inputs.keys().nth(index).unwrap();
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
 
         let current_name = &self.sink_inputs.get(&sink_index).unwrap().name;
-        let _ = send_notification(&format!("Selected: {current_name}"));
+        let _ = send_notification(&format!("{current_name}"));
     }
 
     pub fn play_pause_current(&self) {
@@ -450,13 +469,53 @@ impl Mixer {
 
         drop(index_lock);
 
-        let sink_index = *self.sink_inputs.keys().nth(index).unwrap();
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
 
         let current_name = &self.sink_inputs.get(&sink_index).unwrap().name;
-        match playerctl_toggle(current_name) {
-            Ok(_) => {
-                let _ = send_notification(&format!("Toggled {current_name}"));
-            }
+        match playerctl_play_pause(current_name) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+    }
+
+    pub fn play_next_current(&self) {
+        let index_lock = self.selected_index.lock().unwrap();
+
+        let Some(index) = *index_lock else {
+            return;
+        };
+
+        drop(index_lock);
+
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
+
+        let current_name = &self.sink_inputs.get(&sink_index).unwrap().name;
+        match playerctl_next(current_name) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+    }
+
+    pub fn play_previous_current(&self) {
+        let index_lock = self.selected_index.lock().unwrap();
+
+        let Some(index) = *index_lock else {
+            return;
+        };
+
+        drop(index_lock);
+
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
+
+        let current_name = &self.sink_inputs.get(&sink_index).unwrap().name;
+        match playerctl_previous(current_name) {
+            Ok(_) => (),
             Err(_) => (),
         };
     }
