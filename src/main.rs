@@ -10,8 +10,7 @@ use std::{process::Command, sync::mpsc::channel};
 
 const NOTIFY_SEND_REPLACE_ID: u32 = 1448531;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let mainloop = pulse::mainloop::standard::Mainloop::new().expect("Error getting main loop");
 
     let (pulse_ix_tx, pulse_ix_rx) = channel::<PulseInstruction>();
