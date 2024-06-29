@@ -487,10 +487,14 @@ impl Mixer {
             return;
         };
 
+        let sink_inputs_length = self.sink_inputs.len();
         let current_sink = &self.sink_inputs.get(&sink_index).unwrap();
         let current_sink_volume_percent = current_sink.get_volume_percent();
         let _ = send_notification_with_progress(
-            &format!("{}: {}%", &current_sink.name, current_sink_volume_percent),
+            &format!(
+                "({}/{}) {}: {}%",
+                index + 1, sink_inputs_length, &current_sink.name, current_sink_volume_percent
+            ),
             current_sink_volume_percent,
         );
     }
