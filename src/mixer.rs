@@ -30,7 +30,7 @@ use crate::{
     instructions::MixerInstruction,
     playerctl::{playerctl_next, playerctl_play_pause, playerctl_previous},
     pulseaudio::{PulseInstruction, SinkInputMixerData},
-    utils::{get_sink_input_name, percentage_to_total_volume, send_notification, total_volume_to_percentage, volume_to_percentage},
+    utils::{get_sink_input_name, percentage_to_total_volume, send_notification, volume_to_percentage},
 };
 
 pub struct Mixer {
