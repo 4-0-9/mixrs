@@ -7,6 +7,7 @@ use std::{
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
+    process::exit,
     sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, Mutex,
@@ -592,6 +593,16 @@ impl Mixer {
 }
 
 pub fn iterate_mainloop(mainloop: &mut pulse::mainloop::standard::Mainloop) {
-    mainloop.borrow_mut().iterate(false);
-    thread::sleep(Duration::from_millis(5));
+    match mainloop.borrow_mut().iterate(false) {
+        IterateResult::Success(s) => {
+            if s == 0 {
+                thread::sleep(Duration::from_millis(5));
+            }
+        }
+        IterateResult::Quit(_) => exit(0),
+        IterateResult::Err(e) => {
+            println!("Err: {:?}", e);
+            exit(1);
+        }
+    };
 }
