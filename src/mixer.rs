@@ -209,6 +209,10 @@ impl Mixer {
                             .borrow_mut()
                             .get_sink_input_info(sink_index, move |r| {
                                 if let ListResult::Item(sink_input) = r {
+                                    if sink_input.channel_map.len() == 1 {
+                                        return;
+                                    }
+
                                     *operation_result.lock().unwrap() = Some(SinkInputMixerData {
                                         name: get_sink_input_name(sink_input).unwrap(),
                                         volume: sink_input.volume.avg().0,
