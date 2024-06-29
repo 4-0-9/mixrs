@@ -7,6 +7,7 @@ use std::{
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
+    process::exit,
     sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, Mutex,
@@ -41,10 +42,15 @@ pub struct Mixer {
     selected_index: Arc<Mutex<Option<usize>>>,
     mainloop: Mainloop,
     context: pulse::context::Context,
+    silent_mode: bool,
 }
 
 impl Mixer {
-    pub fn new(mut mainloop: Mainloop, pulse_ix_tx: Sender<PulseInstruction>) -> Self {
+    pub fn new(
+        mut mainloop: Mainloop,
+        pulse_ix_tx: Sender<PulseInstruction>,
+        silent_mode: bool,
+    ) -> Self {
         let mut context =
             pulse::context::Context::new(&mainloop, "Mixrs").expect("Error creating pulse context");
 
@@ -104,6 +110,7 @@ impl Mixer {
             selected_index,
             mainloop,
             context,
+            silent_mode,
         }
     }
 
@@ -422,15 +429,18 @@ impl Mixer {
             .set_sink_input_volume(
                 *sink_index,
                 &volume,
-                Some(Box::new(move |success| {
-                    if success {
-                        let volume = volume_to_percentage(volume);
-                        let _ = send_notification_with_progress(
-                            &format!("{sink_name}: {}%", volume),
-                            volume,
-                        );
-                    }
-                })),
+                match self.silent_mode {
+                    true => None,
+                    false => Some(Box::new(move |success| {
+                        if success {
+                            let volume = volume_to_percentage(volume);
+                            let _ = send_notification_with_progress(
+                                &format!("{sink_name}: {}%", volume),
+                                volume,
+                            );
+                        }
+                    })),
+                },
             );
     }
 
@@ -465,19 +475,26 @@ impl Mixer {
             .set_sink_input_volume(
                 *sink_index,
                 &volume,
-                Some(Box::new(move |success| {
-                    if success {
-                        let volume = volume_to_percentage(volume);
-                        let _ = send_notification_with_progress(
-                            &format!("{sink_name}: {}%", volume),
-                            volume,
-                        );
-                    }
-                })),
+                match self.silent_mode {
+                    true => None,
+                    false => Some(Box::new(move |success| {
+                        if success {
+                            let volume = volume_to_percentage(volume);
+                            let _ = send_notification_with_progress(
+                                &format!("{sink_name}: {}%", volume),
+                                volume,
+                            );
+                        }
+                    })),
+                },
             );
     }
 
     pub fn get_current(&self) {
+        if self.silent_mode {
+            return;
+        }
+
         let index_lock = self.selected_index.lock().unwrap();
 
         let Some(index) = *index_lock else {
@@ -592,6 +609,16 @@ impl Mixer {
 }
 
 pub fn iterate_mainloop(mainloop: &mut pulse::mainloop::standard::Mainloop) {
-    mainloop.borrow_mut().iterate(false);
-    thread::sleep(Duration::from_millis(5));
+    match mainloop.borrow_mut().iterate(false) {
+        IterateResult::Success(s) => {
+            if s == 0 {
+                thread::sleep(Duration::from_millis(5));
+            }
+        }
+        IterateResult::Quit(_) => exit(0),
+        IterateResult::Err(e) => {
+            println!("Err: {:?}", e);
+            exit(1);
+        }
+    };
 }
