@@ -31,8 +31,8 @@ use crate::{
     playerctl::{playerctl_next, playerctl_play_pause, playerctl_previous},
     pulseaudio::{PulseInstruction, SinkInputMixerData},
     utils::{
-        get_sink_input_name, percentage_to_total_volume, send_notification,
-        send_notification_with_progress, volume_to_percentage,
+        get_sink_input_name, percentage_to_total_volume, send_notification_with_progress,
+        volume_to_percentage,
     },
 };
 
