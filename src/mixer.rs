@@ -238,20 +238,18 @@ impl Mixer {
                             Some(current_index) => {
                                 drop(selected_index_lock);
 
-                                let removed_sink_input_index = self
-                                    .sink_inputs
-                                    .keys()
-                                    .position(|k| *k == sink_index)
-                                    .unwrap();
+                                if let Some(removed_sink_input_index) =
+                                    self.sink_inputs.keys().position(|k| *k == sink_index)
+                                {
+                                    let current_key =
+                                        *self.sink_inputs.keys().nth(current_index).unwrap();
 
-                                let current_key =
-                                    *self.sink_inputs.keys().nth(current_index).unwrap();
-
-                                if self.sink_inputs.remove(&sink_index).is_some() {
-                                    if sink_index == current_key
-                                        || removed_sink_input_index > current_index
-                                    {
-                                        self.select_previous();
+                                    if self.sink_inputs.remove(&sink_index).is_some() {
+                                        if sink_index == current_key
+                                            || removed_sink_input_index > current_index
+                                        {
+                                            self.select_previous();
+                                        }
                                     }
                                 }
                             }
