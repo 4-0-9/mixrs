@@ -29,4 +29,17 @@ impl SinkInputMixerData {
     pub fn get_volume_percent(&self) -> u8 {
         total_volume_to_percentage(self.volume)
     }
+
+    /// Formats the sink input data to a string separating fields by new lines
+    pub fn get_output_data(
+        &self,
+        selection_index: usize,
+        sink_count: usize,
+        sink_index: u32,
+    ) -> String {
+        format!(
+            "selection: {}/{sink_count}\nid: {sink_index}\nname: {}\nvolume: {}\nvolume_percentage: {}\nmuted: {}\n",
+            selection_index + 1, self.name, self.volume, self.get_volume_percent(), self.muted
+        )
+    }
 }

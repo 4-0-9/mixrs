@@ -28,3 +28,4 @@ Mixrs will create a unix socket at `/tmp/mixrs` and listen for instructions. Ins
 |6|PlayPauseCurrent|Tells the current sink input to toggle its `playing` state.<br>*Behavior varies based on the current sink input's player*|
 |7|PlayNext|Tells the current sink input to play the next item (e.g. the next song).<br>*Behavior varies based on the current sink input's player*|
 |8|PlayPrevious|Tells the current sink input to play the previous item (e.g. the previous song).<br>*Behavior varies based on the current sink input's player*|
+|9|GetCurrentOutput|Gets information about the currently selected sink input and sends it through the requesting unix socket|
