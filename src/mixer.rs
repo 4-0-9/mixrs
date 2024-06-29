@@ -30,7 +30,10 @@ use crate::{
     instructions::MixerInstruction,
     playerctl::{playerctl_next, playerctl_play_pause, playerctl_previous},
     pulseaudio::{PulseInstruction, SinkInputMixerData},
-    utils::{get_sink_input_name, percentage_to_total_volume, send_notification, volume_to_percentage},
+    utils::{
+        get_sink_input_name, percentage_to_total_volume, send_notification,
+        send_notification_with_progress, volume_to_percentage,
+    },
 };
 
 pub struct Mixer {
@@ -401,11 +404,19 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
-                if success {
-                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
-                }
-            })));
+            .set_sink_input_volume(
+                *sink_index,
+                &volume,
+                Some(Box::new(move |success| {
+                    if success {
+                        let volume = volume_to_percentage(volume);
+                        let _ = send_notification_with_progress(
+                            &format!("{sink_name}: {}%", volume),
+                            volume,
+                        );
+                    }
+                })),
+            );
     }
 
     pub fn decrease_volume_current(&mut self) {
@@ -436,11 +447,19 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
-                if success {
-                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
-                }
-            })));
+            .set_sink_input_volume(
+                *sink_index,
+                &volume,
+                Some(Box::new(move |success| {
+                    if success {
+                        let volume = volume_to_percentage(volume);
+                        let _ = send_notification_with_progress(
+                            &format!("{sink_name}: {}%", volume),
+                            volume,
+                        );
+                    }
+                })),
+            );
     }
 
     pub fn get_current(&self) {
@@ -456,8 +475,12 @@ impl Mixer {
             return;
         };
 
-        let current_name = &self.sink_inputs.get(&sink_index).unwrap().name;
-        let _ = send_notification(&format!("{current_name}"));
+        let current_sink = &self.sink_inputs.get(&sink_index).unwrap();
+        let current_sink_volume_percent = current_sink.get_volume_percent();
+        let _ = send_notification_with_progress(
+            &format!("{}: {}%", &current_sink.name, current_sink_volume_percent),
+            current_sink_volume_percent,
+        );
     }
 
     pub fn play_pause_current(&self) {
