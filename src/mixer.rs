@@ -4,8 +4,8 @@ use std::{
     borrow::{Borrow, BorrowMut},
     collections::HashMap,
     fs,
-    io::Read,
-    os::unix::net::UnixListener,
+    io::{Read, Write},
+    os::unix::net::{UnixListener, UnixStream},
     path::Path,
     sync::{
         mpsc::{channel, Receiver, Sender},
@@ -124,7 +124,7 @@ impl Mixer {
             .create_socket_listener()
             .expect("Error creating unix socket listener");
 
-        let (mixer_tx, mixer_rx) = channel::<MixerInstruction>();
+        let (mixer_tx, mixer_rx) = channel::<(MixerInstruction, UnixStream)>();
 
         thread::spawn(move || {
             for client in listener.incoming() {
@@ -134,7 +134,7 @@ impl Mixer {
                         stream.read_to_end(&mut buf).expect("Error reading stream");
 
                         match MixerInstruction::from_u8(buf[0]) {
-                            Some(ix) => mixer_tx.send(ix).unwrap(),
+                            Some(ix) => mixer_tx.send((ix, stream)).unwrap(),
                             None => println!("Invalid instruction: {}", buf[0]),
                         }
                     }
@@ -181,7 +181,7 @@ impl Mixer {
 
         loop {
             match mixer_rx.try_recv() {
-                Ok(ix) => match ix {
+                Ok((ix, stream)) => match ix {
                     MixerInstruction::SelectNext => self.select_next(),
                     MixerInstruction::SelectPrevious => self.select_previous(),
                     MixerInstruction::ToggleMuteCurrent => self.toggle_mute_current(),
@@ -191,6 +191,7 @@ impl Mixer {
                     MixerInstruction::PlayPauseCurrent => self.play_pause_current(),
                     MixerInstruction::PlayNext => self.play_next_current(),
                     MixerInstruction::PlayPrevious => self.play_previous_current(),
+                    MixerInstruction::GetCurrentOutput => self.get_current_output(stream),
                 },
                 Err(_) => (),
             }
@@ -495,7 +496,10 @@ impl Mixer {
         let _ = send_notification_with_progress(
             &format!(
                 "({}/{}) {}: {}%",
-                index + 1, sink_inputs_length, &current_sink.name, current_sink_volume_percent
+                index + 1,
+                sink_inputs_length,
+                &current_sink.name,
+                current_sink_volume_percent
             ),
             current_sink_volume_percent,
         );
@@ -559,6 +563,31 @@ impl Mixer {
             Ok(_) => (),
             Err(_) => (),
         };
+    }
+
+    pub fn get_current_output(&self, mut stream: UnixStream) {
+        let index_lock = self.selected_index.lock().unwrap();
+
+        let Some(index) = *index_lock else {
+            return;
+        };
+
+        drop(index_lock);
+
+        let Some(sink_index) = self.sink_inputs.keys().nth(index) else {
+            return;
+        };
+
+        let Some(sink_input) = self.sink_inputs.get(sink_index) else {
+            return;
+        };
+
+        let _ = stream.write_all(
+            sink_input
+                .get_output_data(index, self.sink_inputs.len(), *sink_index)
+                .as_bytes(),
+        );
+        let _ = stream.shutdown(std::net::Shutdown::Both);
     }
 }
 

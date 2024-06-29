@@ -9,6 +9,7 @@ pub enum MixerInstruction {
     PlayPauseCurrent,
     PlayNext,
     PlayPrevious,
+    GetCurrentOutput,
 }
 
 impl MixerInstruction {
@@ -23,6 +24,7 @@ impl MixerInstruction {
             6 => Some(MixerInstruction::PlayPauseCurrent),
             7 => Some(MixerInstruction::PlayNext),
             8 => Some(MixerInstruction::PlayPrevious),
+            9 => Some(MixerInstruction::GetCurrentOutput),
             _ => None,
         }
     }
