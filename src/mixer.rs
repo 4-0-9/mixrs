@@ -303,6 +303,12 @@ impl Mixer {
     pub fn select_next(&mut self) {
         let mut index_lock = self.selected_index.lock().unwrap();
 
+        let sink_input_len = self.sink_inputs.len();
+        if sink_input_len == 0 {
+            *index_lock = None;
+            return;
+        }
+
         match *index_lock {
             Some(current_index) => {
                 let new_index: usize =
@@ -327,6 +333,12 @@ impl Mixer {
 
     pub fn select_previous(&mut self) {
         let mut index_lock = self.selected_index.lock().unwrap();
+
+        let sink_input_len = self.sink_inputs.len();
+        if sink_input_len == 0 {
+            *index_lock = None;
+            return;
+        }
 
         match *index_lock {
             Some(current_index) => {
