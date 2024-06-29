@@ -67,3 +67,28 @@ pub fn send_notification(message: &str) -> Result<()> {
 
     Ok(())
 }
+
+pub fn send_notification_with_progress(message: &str, percent: u8) -> Result<()> {
+    let user_id = unsafe { getuid() };
+
+    Command::new("notify-send")
+        .args(vec![
+            "Mixrs",
+            message,
+            "-t",
+            &NOTIFICATION_DURATION_MILLIS.to_string(),
+            "-r",
+            &NOTIFY_SEND_REPLACE_ID.to_string(),
+            "-i",
+            "/",
+            "-h",
+            &format!("int:value:{percent}"),
+        ])
+        .env(
+            "DBUS_SESSION_BUS_ADDRESS",
+            format!("unix:path=/run/user/{user_id}/bus"),
+        )
+        .spawn()?;
+
+    Ok(())
+}
