@@ -30,7 +30,9 @@ use crate::{
     instructions::MixerInstruction,
     playerctl::{playerctl_next, playerctl_play_pause, playerctl_previous},
     pulseaudio::{PulseInstruction, SinkInputMixerData},
-    utils::{get_sink_input_name, percentage_to_total_volume, send_notification, volume_to_percentage},
+    utils::{
+        get_sink_input_name, percentage_to_total_volume, send_notification, volume_to_percentage,
+    },
 };
 
 pub struct Mixer {
@@ -401,11 +403,18 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
-                if success {
-                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
-                }
-            })));
+            .set_sink_input_volume(
+                *sink_index,
+                &volume,
+                Some(Box::new(move |success| {
+                    if success {
+                        let _ = send_notification(&format!(
+                            "{sink_name}: {}%",
+                            volume_to_percentage(volume)
+                        ));
+                    }
+                })),
+            );
     }
 
     pub fn decrease_volume_current(&mut self) {
@@ -436,11 +445,18 @@ impl Mixer {
             .borrow_mut()
             .introspect()
             .borrow_mut()
-            .set_sink_input_volume(*sink_index, &volume, Some(Box::new(move |success| {
-                if success {
-                    let _ = send_notification(&format!("{sink_name}: {}%", volume_to_percentage(volume)));
-                }
-            })));
+            .set_sink_input_volume(
+                *sink_index,
+                &volume,
+                Some(Box::new(move |success| {
+                    if success {
+                        let _ = send_notification(&format!(
+                            "{sink_name}: {}%",
+                            volume_to_percentage(volume)
+                        ));
+                    }
+                })),
+            );
     }
 
     pub fn get_current(&self) {
