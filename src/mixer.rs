@@ -209,6 +209,10 @@ impl Mixer {
                             .borrow_mut()
                             .get_sink_input_info(sink_index, move |r| {
                                 if let ListResult::Item(sink_input) = r {
+                                    if sink_input.channel_map.len() == 1 {
+                                        return;
+                                    }
+
                                     *operation_result.lock().unwrap() = Some(SinkInputMixerData {
                                         name: get_sink_input_name(sink_input).unwrap(),
                                         volume: sink_input.volume.avg().0,
@@ -234,20 +238,18 @@ impl Mixer {
                             Some(current_index) => {
                                 drop(selected_index_lock);
 
-                                let removed_sink_input_index = self
-                                    .sink_inputs
-                                    .keys()
-                                    .position(|k| *k == sink_index)
-                                    .unwrap();
+                                if let Some(removed_sink_input_index) =
+                                    self.sink_inputs.keys().position(|k| *k == sink_index)
+                                {
+                                    let current_key =
+                                        *self.sink_inputs.keys().nth(current_index).unwrap();
 
-                                let current_key =
-                                    *self.sink_inputs.keys().nth(current_index).unwrap();
-
-                                if self.sink_inputs.remove(&sink_index).is_some() {
-                                    if sink_index == current_key
-                                        || removed_sink_input_index > current_index
-                                    {
-                                        self.select_previous();
+                                    if self.sink_inputs.remove(&sink_index).is_some() {
+                                        if sink_index == current_key
+                                            || removed_sink_input_index > current_index
+                                        {
+                                            self.select_previous();
+                                        }
                                     }
                                 }
                             }
@@ -303,6 +305,12 @@ impl Mixer {
     pub fn select_next(&mut self) {
         let mut index_lock = self.selected_index.lock().unwrap();
 
+        let sink_input_len = self.sink_inputs.len();
+        if sink_input_len == 0 {
+            *index_lock = None;
+            return;
+        }
+
         match *index_lock {
             Some(current_index) => {
                 let new_index: usize =
@@ -327,6 +335,12 @@ impl Mixer {
 
     pub fn select_previous(&mut self) {
         let mut index_lock = self.selected_index.lock().unwrap();
+
+        let sink_input_len = self.sink_inputs.len();
+        if sink_input_len == 0 {
+            *index_lock = None;
+            return;
+        }
 
         match *index_lock {
             Some(current_index) => {
@@ -475,10 +489,14 @@ impl Mixer {
             return;
         };
 
+        let sink_inputs_length = self.sink_inputs.len();
         let current_sink = &self.sink_inputs.get(&sink_index).unwrap();
         let current_sink_volume_percent = current_sink.get_volume_percent();
         let _ = send_notification_with_progress(
-            &format!("{}: {}%", &current_sink.name, current_sink_volume_percent),
+            &format!(
+                "({}/{}) {}: {}%",
+                index + 1, sink_inputs_length, &current_sink.name, current_sink_volume_percent
+            ),
             current_sink_volume_percent,
         );
     }
