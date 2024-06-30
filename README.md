@@ -8,7 +8,7 @@ There is currently no convenient way to install Mixrs. To use this application, 
 ## Requirements
 - [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/)
 - [playerctl](https://wiki.archlinux.org/title/MPRIS#Playerctl)
-- [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
+- [libnotify](https://gitlab.gnome.org/GNOME/libnotify) (required unless started with `--silent`)
 
 ## Usage
 Mixrs will create a unix socket at `/tmp/mixrs` and listen for instructions. Instructions are issued by sending a specific byte to the socket.
