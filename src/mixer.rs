@@ -237,6 +237,10 @@ impl Mixer {
                         let sink_input = result.lock().unwrap().take();
                         if let Some(sink_input) = sink_input {
                             self.sink_inputs.insert(sink_index, sink_input);
+
+                            if self.selected_index.lock().unwrap().is_none() {
+                                self.select_next();
+                            }
                         }
                     }
                     PulseInstruction::RemoveSinkInput(sink_index) => {
