@@ -24,7 +24,7 @@ Mixrs will create a unix socket at `/tmp/mixrs` and listen for instructions. Ins
 |2|ToggleMuteCurrent|Toggles the current sink input's muted state|
 |3|IncreaseCurrent|Increases the current sink input's volume by 5%|
 |4|DecreaseCurrent|Decreases the current sink input's volume by 5%|
-|5|GetCurrent|Displays the current sink input's name|
+|5|GetCurrent|Displays the current sink input's name<br>*Has no effect when using `--silent`*|
 |6|PlayPauseCurrent|Tells the current sink input to toggle its `playing` state.<br>*Behavior varies based on the current sink input's player*|
 |7|PlayNext|Tells the current sink input to play the next item (e.g. the next song).<br>*Behavior varies based on the current sink input's player*|
 |8|PlayPrevious|Tells the current sink input to play the previous item (e.g. the previous song).<br>*Behavior varies based on the current sink input's player*|
